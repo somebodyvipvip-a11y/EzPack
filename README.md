@@ -1,26 +1,35 @@
-# EzPack
-一个极简、智能的 Python 一键「多尺寸图标转换」与「自动打包清理」工具。---由gemini生成
+# EzPack 🚀
+
+[![Python Version](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org)
+[![PySide6](https://img.shields.io/badge/PySide6-6.0+-41CD52?logo=qt&logoColor=white)](https://doc.qt.io/qtforpython-6/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?logo=windows&logoColor=white)](https://www.microsoft.com)
+
+**EzPack** 是一款专为 Python 开发者打造的**现代化、一键式可视化打包配置工具**。基于 PySide6 (Qt for Python) 构建，采用优雅的 macOS 风格暗黑主题界面，旨在解决 `PyInstaller` 繁琐的命令行参数记忆痛点，并彻底解决 Windows 环境下打包及运行时令人烦恼的“CMD黑框”问题。
+
+无论你是想快速发布一个脚本，还是交付一个大型的 GUI 商业软件，EzPack 都能让你的打包流程变得优雅而简单。
+
 ---
-
-## 💡 为什么需要它？
-
-使用 `PyInstaller` 打包 Python 程序时，你是否遇到过以下烦恼：
-1. **图标格式限制**：必须手动找网站把 `.png` 转换成 `.ico`。
-2. **图标模糊刺眼**：只用单一尺寸的图标，导致在 Windows 任务栏或高分屏（4K）上模糊、充满锯齿。
-3. **缓存垃圾成堆**：每次打包完，目录下都会残留一堆 `build` 文件夹和 `.spec` 配置文件，必须手动删除。
-
-**本工具就是为了终结这些繁琐步骤而生的！** 只需要提供你的 PNG 图片和 Python 脚本，剩下的一切（环境安装、多尺寸图标制作、打包、垃圾清理）全部交由脚本自动化完成。
 
 ## ✨ 核心特性
 
-* **🎨 智能全尺寸 ICO 生成**：自动将 PNG 转换为包含 `16x16, 32x32, 48x48, 128x128, 256x256` 5种黄金尺寸的标准 Windows 图标容器，确保你的 `.exe` 在任何分辨率（包括4K）和任何视图下都丝滑清晰。
-* **🧹 强迫症级垃圾清理**：打包成功后，自动连根拔除 `build/` 文件夹、`.spec` 配置文件以及临时的 `.ico` 图标，**只保留最干净的 `dist/` 文件夹和你的 `.exe` 程序**。
-* **📦 环境无感自适应**：脚本在运行时会自动检测并后台安装 `Pillow` 和 `PyInstaller`，无需手动执行 `pip install`。
-* **🖱️ 支持路径拖拽**：完美兼容 Windows 命令行，直接把图片和脚本拖进窗口即可识别，自动过滤多余的双引号与空格。
+- 🤫 **全静默编译（无黑框特技）**：通过底层注入 Windows 特有的 `CREATE_NO_WINDOW` 标记，**彻底压制**编译过程中频繁闪烁的 CMD 黑色弹窗，让打包过程宛如后台原生服务般丝滑。
+- 📦 **沙盒隔离机制 (Venv)**：支持一键开启独立的干净虚拟环境（Virtual Environment），拒绝本地全局臃肿环境带来的干扰，有效**缩减 50% 以上**的最终 `.exe` 体积。
+- 🖼️ **智能图标中转站**：完美支持原生 `.ico` 格式直通；同时内置高保真图像处理，可将 `PNG` / `JPG` / `BMP` 等普通图片**自动转换为标准多尺寸多色彩空间的集成 ICO 图标**。
+- 🖲️ **拖拽式智能分流**：支持将 `.py` 脚本和图片资源直接拖入窗口任意位置，算法会自动识别文件后缀并精准填装到对应路径框中。
+- ⚡ **巨型库智能剔除**：针对 PySide/PyQt 开发者，内置一键剥离 `QtWebEngine`（网页内核）的优化策略，可直接为最终生成文件**瘦身 100MB+**。
+- 📊 **可视化日志与统计**：实时捕获编译流，高亮展示关键节点，并在打包结束后自动统计**编译总耗时**与**最终软件体积**，自动打开输出目录。
 
-## 🚀 使用方法
+---
 
-1. 下载或克隆本项目中的 `auto_pack.py` 脚本。
-2. 打开终端/命令行，运行脚本：
-```bash
-   python EzPack.py
+## 🛠️ 技术栈
+
+* **GUI 框架**：PySide6 (Qt6)
+* **核心引擎**：PyInstaller
+* **图像处理**：Pillow (PIL)
+* **底层通信**：异步 QThread 任务线程 + Subprocess 管道捕获
+
+---
+
+## 🚀 快速上手
+
