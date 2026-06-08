@@ -2,10 +2,9 @@
 
 [![Python Version](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://www.python.org)
 [![PySide6](https://img.shields.io/badge/PySide6-6.0+-41CD52?logo=qt&logoColor=white)](https://doc.qt.io/qtforpython-6/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?logo=windows&logoColor=white)](https://www.microsoft.com)
 
-**EzPack** 是一款专为 Python 开发者打造的**现代化、一键式可视化打包配置工具**。基于 PySide6 (Qt for Python) 构建，采用优雅的 macOS 风格暗黑主题界面，旨在解决 `PyInstaller` 繁琐的命令行参数记忆痛点，并彻底解决 Windows 环境下打包及运行时令人烦恼的“CMD黑框”问题。
+**EzPack** 是一款专为 Python 开发者打造的**现代化、一键式可视化打包配置工具**。基于 PySide6 (Qt for Python) 构建，采用优雅的 macOS 风格暗黑主题界面，旨在解决 `PyInstaller` 繁琐的命令行参数记忆痛点，并彻底解决 Windows 环境下打包及运行时令人烦恼的“CMD黑框”问题。---由Gemini构建开发
 
 无论你是想快速发布一个脚本，还是交付一个大型的 GUI 商业软件，EzPack 都能让你的打包流程变得优雅而简单。
 
