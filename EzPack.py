@@ -83,10 +83,11 @@ class PackWorker(QThread):
     log_signal = Signal(str)
     finished_signal = Signal(bool, str)
 
-    def __init__(self, py_path, img_path, hide_console, auto_req, use_upx, use_venv, exclude_webengine):
+    def __init__(self, py_path, img_path, data_path, hide_console, auto_req, use_upx, use_venv, exclude_webengine):
         super().__init__()
         self.py_path = py_path
         self.img_path = img_path
+        self.data_path = data_path
         self.hide_console = hide_console
         self.auto_req = auto_req
         self.use_upx = use_upx
@@ -177,7 +178,7 @@ class PackWorker(QThread):
                         check=True, cwd=current_dir, creationflags=HIDE_SUBPROCESS_FLAG
                     )
 
-            # 5. 应用程序图标预处理
+            # 5. 应用程序图标预处理 (仅用于修改 EXE 本身的系统图标)
             final_ico_path = None
             is_temp_ico = False
 
@@ -218,6 +219,19 @@ class PackWorker(QThread):
             self.log_signal.emit("[4/5] 正在配置 PyInstaller 编译参数...")
             
             cmd = [pyinstaller_bin, "--onefile", "--noconfirm", "--clean"]
+
+            # ✨ 新增：注入附加数据资源 (--add-data) 核心黑科技
+            if self.data_path and os.path.exists(self.data_path):
+                path_sep = ";" if IS_WIN else ":"
+                if os.path.isdir(self.data_path):
+                    # 如果是文件夹，保持原有文件夹名称结构压入
+                    folder_name = os.path.basename(self.data_path.rstrip(r"\/"))
+                    cmd.extend(["--add-data", f"{self.data_path}{path_sep}{folder_name}"])
+                    self.log_signal.emit(f"-> [资源封装] 已挂载文件夹：{folder_name}")
+                else:
+                    # 如果是单文件，直接释放到运行时的根目录级
+                    cmd.extend(["--add-data", f"{self.data_path}{path_sep}."])
+                    self.log_signal.emit(f"-> [资源封装] 已挂载单资源文件：{os.path.basename(self.data_path)}")
 
             if self.exclude_webengine:
                 cmd.extend(["--exclude-module", "PySide6.QtWebEngineCore"])
@@ -314,8 +328,8 @@ class EzPackApp(QWidget):
 
     def init_ui(self):
         self.setWindowTitle("EzPack - Python 应用程序打包配置实用工具")
-        self.resize(1000, 720)
-        self.setMinimumSize(750, 650)
+        self.resize(1000, 760)
+        self.setMinimumSize(750, 680)
         self.setAcceptDrops(True)
 
         self.app_icon = QIcon()
@@ -418,6 +432,7 @@ class EzPackApp(QWidget):
         grid_layout.setHorizontalSpacing(12)
         grid_layout.setVerticalSpacing(15)
 
+        # 1. 源脚本
         py_title = QLabel("源脚本路径 (*.py)")
         py_title.setStyleSheet("font-weight: bold; color: white;")
         self.py_path_edit = QLineEdit()
@@ -433,10 +448,11 @@ class EzPackApp(QWidget):
         grid_layout.addWidget(self.py_path_edit, 1, 0)
         grid_layout.addWidget(btn_browse_py, 1, 1)
 
-        img_title = QLabel("应用程序图标 (支持原生 ICO 直通，或自动转换 PNG/JPG/BMP，可选)")
+        # 2. EXE 主图标
+        img_title = QLabel("EXE 外壳图标 (支持原生 ICO 直通，或自动转换 PNG/JPG/BMP，可选)")
         img_title.setStyleSheet("font-weight: bold; color: white;")
         self.img_path_edit = QLineEdit()
-        self.img_path_edit.setPlaceholderText("将图标或图片直接拖入此窗口任意位置...")
+        self.img_path_edit.setPlaceholderText("仅用于给生成的 .exe 外壳换图标...")
         self.img_path_edit.setAcceptDrops(False)
         
         btn_browse_img = QPushButton("选择文件...")
@@ -447,6 +463,22 @@ class EzPackApp(QWidget):
         grid_layout.addWidget(img_title, 2, 0, 1, 2)
         grid_layout.addWidget(self.img_path_edit, 3, 0)
         grid_layout.addWidget(btn_browse_img, 3, 1)
+
+        # ✨ 3. 新增：附加资源数据挂载路径框 (--add-data)
+        data_title = QLabel("代码内部引用的附加资源/图标 (支持单文件或整个文件夹，可选)")
+        data_title.setStyleSheet("font-weight: bold; color: white;")
+        self.data_path_edit = QLineEdit()
+        self.data_path_edit.setPlaceholderText("支持拖入内含 ico/图片/配置的文件夹，或点击右侧选择单文件...")
+        self.data_path_edit.setAcceptDrops(False)
+
+        btn_browse_data = QPushButton("选择文件...")
+        btn_browse_data.setObjectName("BrowseBtn")
+        btn_browse_data.setCursor(Qt.PointingHandCursor)
+        btn_browse_data.clicked.connect(self.browse_data)
+
+        grid_layout.addWidget(data_title, 4, 0, 1, 2)
+        grid_layout.addWidget(self.data_path_edit, 5, 0)
+        grid_layout.addWidget(btn_browse_data, 5, 1)
 
         grid_layout.setColumnStretch(0, 1)
         main_layout.addWidget(panel_frame)
@@ -509,6 +541,13 @@ class EzPackApp(QWidget):
         if file_path:
             self.img_path_edit.setText(os.path.normpath(file_path))
 
+    def browse_data(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "选择要封装进内层的资源文件", "", "所有资源文件 (*.*)"
+        )
+        if file_path:
+            self.data_path_edit.setText(os.path.normpath(file_path))
+
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
@@ -520,39 +559,48 @@ class EzPackApp(QWidget):
 
         has_py = False
         has_img = False
+        has_data = False
         unsupported_files = []
 
         for url in urls:
             file_path = url.toLocalFile()
             clean_path = os.path.normpath(file_path.strip(' "\''))
-            ext = clean_path.lower()
 
+            # 🛠️ 智能化拖拽分流逻辑
+            if os.path.isdir(clean_path):
+                # 只要是文件夹，一律作为附加资源处理
+                self.data_path_edit.setText(clean_path)
+                has_data = True
+                continue
+
+            ext = clean_path.lower()
             if ext.endswith(".py"):
                 self.py_path_edit.setText(clean_path)
                 has_py = True
             elif ext.endswith((".ico", ".png", ".jpg", ".jpeg", ".bmp")):
-                self.img_path_edit.setText(clean_path)
-                has_img = True
+                # 如果发现外壳图标还空着，优先填入外壳图标，否则填入附加数据资源
+                if not self.img_path_edit.text().strip():
+                    self.img_path_edit.setText(clean_path)
+                    has_img = True
+                else:
+                    self.data_path_edit.setText(clean_path)
+                    has_data = True
             else:
-                unsupported_files.append(os.path.basename(clean_path))
+                # 其他所有乱七八糟的文件，归为资源附加数据
+                self.data_path_edit.setText(clean_path)
+                has_data = True
 
-        if has_py and has_img:
-            self.append_log_line("⚡ [智能分流] 成功识别到脚本与图像资源，已分别自动归类填装！")
-        elif has_py:
+        if has_py:
             self.append_log_line("-> 识别至 Python 源脚本，路径已自动同步。")
-        elif has_img:
-            self.append_log_line("-> 识别至图像资源，路径已自动同步至图标配置。")
-
-        if unsupported_files:
-            QMessageBox.warning(
-                self, 
-                "部分文件格式不支持", 
-                f"以下文件未被装载：\n{', '.join(unsupported_files)}"
-            )
+        if has_img:
+            self.append_log_line("-> 识别至外壳图像资源，路径已自动同步。")
+        if has_data:
+            self.append_log_line("⚡ [智能分流] 识别到附加资源数据包/文件夹，已绑定至 Add-Data 轨道！")
 
     def start_pack_process(self):
         py_path = self.py_path_edit.text().strip(' "\'')
         img_path = self.img_path_edit.text().strip(' "\'')
+        data_path = self.data_path_edit.text().strip(' "\'')
 
         if not py_path or not os.path.exists(py_path):
             QMessageBox.critical(self, "配置错误", "目标 Python 源脚本路径无效，请核对后重试。")
@@ -563,7 +611,7 @@ class EzPackApp(QWidget):
         self.log_text_edit.clear()
 
         self.worker = PackWorker(
-            py_path, img_path, 
+            py_path, img_path, data_path,
             self.cb_hide_console.isChecked(), 
             self.cb_auto_req.isChecked(),
             self.cb_use_upx.isChecked(),
